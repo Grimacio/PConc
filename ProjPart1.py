@@ -54,7 +54,6 @@ os.mkdir(path+"/resized")
 os.mkdir(path+"/thumbnail")
 numeroThreads=int(input("Number of Threads?:\n"))
 lista=[]
-new=[]
 
 f= open("nomes.txt", "r")
 
@@ -64,7 +63,7 @@ with f as texto:
 
 
 
-listacopy=lista
+listacopy=lista.copy()
 listaThreads=[]
 for i in range( numeroThreads):
     newThread = Thread(target=threadFunc)
