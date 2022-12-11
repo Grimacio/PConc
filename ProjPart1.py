@@ -1,5 +1,9 @@
 from threading import Thread
 from PIL import Image
+from tkinter import Tk
+from tkinter.filedialog import askdirectory
+import os
+
 
 def resize(imagem, dimensoes):
     copy= Image.open(imagem)
@@ -15,15 +19,40 @@ def watermark(imagem):
     
     # add watermark
     copied_image = imagem.copy()
-    copied_image.paste(crop_image, position)
+    copied_image.paste(crop_image, position, crop_image)
     return copied_image
 
 def thumbnail(ficheiro, tamanho):
     imagem=Image.open(ficheiro)
     imagem.thumbnail(tamanho)
-    imagem.save(ficheiro.split(".")[0]+ ".thumbnail", "JPEG")
-    return 
+    ##imagem.save(ficheiro.split(".")[0]+ ".thumbnail", "JPEG")
+    return imagem
 
+
+def threadFunc():
+    global listacopy
+    global path
+    while len(listacopy)>0:
+        imagem= listacopy.pop()
+        dimensoes=(250,250)
+        tamanho=(50,50)
+
+        watermark(path+"/"+imagem).save(path+ "/watermark/"+imagem, "PNG")
+
+        resize(path+ "/watermark/" +imagem, dimensoes).save(path +"/resized/"+ imagem, "PNG")
+
+        thumbnail(path+"/resized/" + imagem, tamanho).save(path + "/thumbnail/" +imagem, "PNG")
+
+    return
+
+
+print("Select Image Folder")
+path = askdirectory(title='Select Folder')
+print(path)
+os.mkdir(path+"/watermark")
+os.mkdir(path+"/resized")
+os.mkdir(path+"/thumbnail")
+numeroThreads=int(input("Number of Threads?:\n"))
 lista=[]
 new=[]
 
@@ -33,5 +62,17 @@ with f as texto:
     for line in texto:
         lista+=[line.replace("\n", "")]
 
-watermark(lista[0]).show()
+
+
+listacopy=lista
+listaThreads=[]
+for i in range( numeroThreads):
+    newThread = Thread(target=threadFunc)
+    newThread.start()
+    listaThreads+=[newThread]
+for item in listaThreads:
+    item.join()
+    print("done")
+
+
 
