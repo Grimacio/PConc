@@ -1,7 +1,6 @@
 from threading import Thread
 from threading import Condition
 from PIL import Image
-from tkinter import Tk
 from tkinter.filedialog import askdirectory
 import os
 
