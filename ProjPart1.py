@@ -10,13 +10,19 @@ def watermark(imagem):
     watermark= Image.open("watermark.png")
     imagem=Image.open(imagem)
     # image watermark
-    size = (250, 50)
+    position=(0,0) 
     crop_image = watermark.copy()
     
     # add watermark
     copied_image = imagem.copy()
-    copied_image.paste(crop_image, size)
+    copied_image.paste(crop_image, position, crop_image)
     return copied_image
+
+def thumbnail(ficheiro, tamanho):
+    imagem=Image.open(ficheiro)
+    imagem.thumbnail(tamanho)
+    imagem.save(ficheiro.split(".")[0]+ ".thumbnail", "JPEG")
+    return 
 
 lista=[]
 new=[]
@@ -28,6 +34,4 @@ with f as texto:
         lista+=[line.replace("\n", "")]
 
 watermark(lista[0]).show()
-'''imagem=Image.open(lista[0])
-imagem.thumbnail((150,150))
-imagem.save(lista[0].split(".")[0]+ ".thumbnail", "JPEG")'''
+
