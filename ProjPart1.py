@@ -15,7 +15,7 @@ def watermark(imagem):
     
     # add watermark
     copied_image = imagem.copy()
-    copied_image.paste(crop_image, position, crop_image)
+    copied_image.paste(crop_image, position)
     return copied_image
 
 def thumbnail(ficheiro, tamanho):
