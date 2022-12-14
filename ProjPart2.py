@@ -1,6 +1,5 @@
 import math 
 from threading import Thread
-from threading import Condition
 from PIL import Image
 from tkinter.filedialog import askdirectory
 import os
@@ -64,66 +63,50 @@ def thumbnail(ficheiro, tamanho):
         print(e)
         return None
 
-def tWatermark(self):
+def tWatermark():
     global listacopy
     global path
     global watermarkReady
     while len(listacopy)>0:
-        self.acquire()
         imagem= listacopy.pop()
 
-        watermark(path+"/"+imagem).save(path+ "/watermark/"+imagem, "PNG")
+        watermark(path+"/"+imagem, "watermark.png").save(path+ "/watermark/"+imagem, "PNG")
         print("acabei 1")
         watermarkReady+=[path+"/watermark/"+imagem]
-        self.notify_all()
-        self.release()
     return
 
-def tResize(self):
+def tResize():
     
+    global lista
+    global path
     global dimensoes
-    i=0
-    while watermarkThread.is_alive() or len(watermarkReady)>i:
-        self.acquire()
-        if len(watermarkReady)<=i:
-            self.wait()
-            print("acordei")
-        else:
-            target=watermarkReady[i]
-            print("encontrei1")
-            resize(target, dimensoes).save(path +"/resized/"+ target.split("/")[-1], "PNG")
-            i+=1
-        self.release()
-    return
-
-def tThumbnail(self):
-    
-    global tamanho
-    j=0
-    while watermarkThread.is_alive() or len(watermarkReady)>j:
-        self.acquire()  
-        if len(watermarkReady)<=j:
-            self.wait()
-            print("acordei")
-        else:
-            target=watermarkReady[j]
-            print("encontrei2")
-            thumbnail(target, tamanho).save(path +"/thumbnail/"+ target.split("/")[-1], "PNG")
-            j+=1
-        self.release()
-    
+    for nome in lista:
+        resize(path+"/watermark/"+nome, dimensoes).save(path +"/resized/"+ nome.split("/")[-1], "PNG")
     return
         
 
-dimensoes= (500,500)
-tamanho = (50,50)
+def tThumbnail():
+    
+    global tamanho
+
+    global lista
+    global path
+    for nome in lista:
+        thumbnail(path+"/watermark/"+nome, tamanho).save(path +"/thumbnail/"+ nome.split("/")[-1], "PNG")
+    return
+    
+dimensoes= 500
+tamanho = 50
 watermarkReady=[]
 print("Select Image Folder")
 path = askdirectory(title='Select Folder')
 print(path)
-os.mkdir(path+"/watermark")
-os.mkdir(path+"/resized")
-os.mkdir(path+"/thumbnail")
+if not os.path.exists(path+"/watermark"):
+    os.mkdir(path+"/watermark")
+if not os.path.exists(path+"/resized"):
+    os.mkdir(path+"/resized")
+if not os.path.exists(path+"/thumbnail"):
+    os.mkdir(path+"/thumbnail")
 
 lista=[]
 
@@ -135,18 +118,16 @@ with f as texto:
 
 listacopy=lista.copy()
 
-
-condition = Condition()
-
-watermarkThread= Thread(target=tWatermark, args=(condition,))
-resizeThread= Thread(target=tResize, args=(condition,))
-thumbnailThread= Thread(target=tThumbnail, args=(condition,))
+watermarkThread= Thread(target=tWatermark)
+resizeThread= Thread(target=tResize)
+thumbnailThread= Thread(target=tThumbnail)
 
 watermarkThread.start()
+watermarkThread.join()
 resizeThread.start()
 thumbnailThread.start()
 
-watermarkThread.join()
+
 resizeThread.join()
 thumbnailThread.join()
 
