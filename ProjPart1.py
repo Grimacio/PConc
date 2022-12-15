@@ -1,7 +1,6 @@
 from threading import Thread
 import math 
 from PIL import Image
-from tkinter import Tk
 from tkinter.filedialog import askdirectory
 import os
 
@@ -15,23 +14,44 @@ listacopy=[]
 watermarkLOC="watermark.png"
 
 
+
+# Inicializa o programa recolhendo inputs pelo terminal, 
+# recolhe os endereços das imagens e cria as threads de acordo
+
 def ap_paralelo_1():
-    global lista
+    global lista, path
     initalize()
     lista=readtxt(path)
     createThreads(numeroThreads)
 
+
+
+
+# Define os valores a utilizar no programa, bem como
+# a diretoria das imagens requeridas
+
 def initalize():
     print("Select Image Folder")
     global path, numeroThreads, dimensoes, tamanho
+
+    # Abre uma janela em que se navega até à diretoria em
+    # que se econtram as imagens e o ficheiro .txt, 
+    # guardando-se o path
     path = askdirectory(title='Select Folder')
+
+    
     while numeroThreads<=0:
         numeroThreads=int(input("Number of Threads?:\n"))
         if numeroThreads<=0:
             print("Invalid number of Threads")
+
+    # A dimensao referente a imagem redimensionada
     dimensoes=int(input("Resize to which size? (px):\n"))
+
+    # A dimensao da thumbnail
     tamanho=int(input("Thumbnail to which size? (px):\n"))
 
+    # Apenas criamos as novas pastas se estas nao existirem
     if not os.path.exists(path+"/Watermark-dir"):
         os.mkdir(path+"/Watermark-dir")
     if not os.path.exists(path+"/Resize-dir"):
@@ -39,23 +59,48 @@ def initalize():
     if not os.path.exists(path+"/Thumbnail-dir"):
         os.mkdir(path+"/Thumbnail-dir")
 
+
+
+# Com base no ficheiro "image-list.txt" presente na diretoria em que
+# as imagens se encontram, é retornada uma lista com os nomes das imagens
+
 def readtxt(path):
+
     res=[]
+
     f= open(path+"/image-list.txt", "r")
+
     with f as texto:
         for line in texto:
             res+=[line.replace("\n", "")]
+
     return res
 
+
+
+
+# Sao criadas n Threads, cada uma executa a funcao threadFunc
+# Para eventual identificacao, a propriedade "name" e alterada
+# de acordo com a ordem pela qual sao criadas
+
 def createThreads(n):
+
     global lista, listacopy
+
     listacopy=lista.copy()
+
     listaThreads=[]
+
     for i in range(n):
+
+        # Cria-se e inicializa-se uma Thread
         newThread = Thread(target=threadFunc)
         newThread.name = "Processa_ficheiro("+ str(i)+")"
         newThread.start()
+
+        # Uma lista de Threads e criada para posterior finalizacao
         listaThreads+=[newThread]
+
     for item in listaThreads:
         item.join()
 
@@ -122,14 +167,28 @@ def thumbnail(ficheiro, tamanho):
         return None
 
 
+# Enquanto a listacopy contiver enderecos de imagens para processar,
+# o último dos seus elementos e usado para criar uma cópia da imagem
+# com watermark, que depois e redimensionada e por fim cria-se uma thumbnail
+# Cada uma destas imagens é gravada no formato .png 
+
 def threadFunc():
+
     global listacopy
     global path
     global dimensoes
     global tamanho
+
+
+    # Enquanto a listacopy contiver enderecos de imagens para processar,
+    # a Thread continua ativa
+
     while len(listacopy)>0:
-        imagem= listacopy.pop()
         
+
+        # O último dos seus elementos é usado 
+
+        imagem= listacopy.pop()
 
         if not os.path.exists(path+"/Watermark-dir/"+imagem):
             print("watermark de "+imagem.split(".")[0]+": nao encontrado")
