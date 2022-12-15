@@ -5,6 +5,63 @@ from tkinter import Tk
 from tkinter.filedialog import askdirectory
 import os
 
+
+path=""
+numeroThreads=0
+dimensoes=0
+tamanho=0
+lista=[]
+listacopy=[]
+watermarkLOC="watermark.png"
+
+
+def ap_paralelo_1():
+    global lista
+    initalize()
+    lista=readtxt(path)
+    createThreads(numeroThreads)
+
+def initalize():
+    print("Select Image Folder")
+    global path, numeroThreads, dimensoes, tamanho
+    path = askdirectory(title='Select Folder')
+    while numeroThreads<=0:
+        numeroThreads=int(input("Number of Threads?:\n"))
+        if numeroThreads<=0:
+            print("Invalid number of Threads")
+    dimensoes=int(input("Resize to which size? (px):\n"))
+    tamanho=int(input("Thumbnail to which size? (px):\n"))
+
+    if not os.path.exists(path+"/Watermark-dir"):
+        os.mkdir(path+"/Watermark-dir")
+    if not os.path.exists(path+"/Resize-dir"):
+        os.mkdir(path+"/Resize-dir")
+    if not os.path.exists(path+"/Thumbnail-dir"):
+        os.mkdir(path+"/Thumbnail-dir")
+
+def readtxt(path):
+    res=[]
+    f= open(path+"/image-list.txt", "r")
+    with f as texto:
+        for line in texto:
+            res+=[line.replace("\n", "")]
+    return res
+
+def createThreads(n):
+    global lista
+    global listacopy
+    listacopy=lista.copy()
+    listaThreads=[]
+    for i in range(n):
+        newThread = Thread(target=threadFunc)
+        newThread.name = "Processa_ficheiro("+ str(i)+")"
+        newThread.start()
+        listaThreads+=[newThread]
+    for item in listaThreads:
+        item.join()
+
+
+
 def resize(imagem, new_width):
     try:
         copy= Image.open(imagem)
@@ -19,13 +76,14 @@ def resize(imagem, new_width):
         print(e)
         return None
 
-def watermark(imagem, water):
+def watermark(imagem):
+    global watermarkLOC
     try:
         imagem=Image.open(imagem)
         try:
             # image watermark
             position=(0,0) 
-            crop_image = resize(water, math.ceil(imagem.size[0]/3))
+            crop_image = resize(watermarkLOC, math.ceil(imagem.size[0]/3))
             
             # add watermark
             copied_image = imagem.copy()
@@ -68,57 +126,32 @@ def thumbnail(ficheiro, tamanho):
 def threadFunc():
     global listacopy
     global path
+    global dimensoes
+    global tamanho
     while len(listacopy)>0:
         imagem= listacopy.pop()
-        dimensoes= 250
-        tamanho= 50
+        
 
-        if not os.path.exists(path+"/watermark/"+imagem):
+        if not os.path.exists(path+"/Watermark-dir/"+imagem):
             print("watermark de "+imagem.split(".")[0]+": nao encontrado")
-            watermark(path+"/"+imagem).save(path+ "/watermark/"+imagem, "PNG")
+            watermark(path+"/"+imagem).save(path+ "/Watermark-dir/"+imagem, "PNG")
         else:
             print("watermark de "+imagem.split(".")[0]+": encontrado")
         
-        if not os.path.exists(path+"/resized/"+imagem):
+        if not os.path.exists(path+"/Resize-dir/"+imagem):
             print("resize de "+imagem.split(".")[0]+": nao encontrado")
-            resize(path+ "/watermark/" +imagem, dimensoes).save(path +"/resized/"+ imagem, "PNG")
+            resize(path+ "/Watermark-dir/" +imagem, dimensoes).save(path +"/Resize-dir/"+ imagem, "PNG")
         else:
             print("resize de "+imagem.split(".")[0]+": encontrado")
         
-        if not os.path.exists(path+"/thumbnail/"+imagem):
+        if not os.path.exists(path+"/Thumbnail-dir/"+imagem):
             print("resize de "+imagem.split(".")[0]+": nao encontrado")
-            thumbnail(path+"/resized/" + imagem, tamanho).save(path + "/thumbnail/" +imagem, "PNG")
+            thumbnail(path+"/Resize-dir/" + imagem, tamanho).save(path + "/Thumbnail-dir/" +imagem, "PNG")
         else:
             print("resize de "+imagem.split(".")[0]+": encontrado")
 
     return
 
 
-print("Select Image Folder")
-path = askdirectory(title='Select Folder')
-print(path)
-if not os.path.exists(path+"/watermark"):
-    os.mkdir(path+"/watermark")
-if not os.path.exists(path+"/resized"):
-    os.mkdir(path+"/resized")
-if not os.path.exists(path+"/thumbnail"):
-    os.mkdir(path+"/thumbnail")
-numeroThreads=int(input("Number of Threads?:\n"))
-lista=[]
 
-f= open("nomes.txt", "r")
-
-with f as texto:
-    for line in texto:
-        lista+=[line.replace("\n", "")]
-
-listacopy=lista.copy()
-listaThreads=[]
-for i in range( numeroThreads):
-    newThread = Thread(target=threadFunc)
-    newThread.start()
-    listaThreads+=[newThread]
-for item in listaThreads:
-    item.join()
-    print("done")
-
+ap_paralelo_1()
