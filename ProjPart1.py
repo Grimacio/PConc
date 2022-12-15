@@ -48,8 +48,7 @@ def readtxt(path):
     return res
 
 def createThreads(n):
-    global lista
-    global listacopy
+    global lista, listacopy
     listacopy=lista.copy()
     listaThreads=[]
     for i in range(n):

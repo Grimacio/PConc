@@ -4,6 +4,59 @@ from PIL import Image
 from tkinter.filedialog import askdirectory
 import os
 
+path=""
+dimensoes=0
+tamanho=0
+lista=[]
+listacopy=[]
+watermarkLOC="watermark.png"
+
+def ap_paralelo_2():
+    global path, lista
+    initialize()
+    lista=readtxt(path)
+    createThreads()
+
+
+def createThreads():
+    global lista, listacopy
+    listacopy=lista.copy()
+    Processa_Watermark= Thread(target=tWatermark)
+    Processa_Resize= Thread(target=tResize)
+    Processa_Thumbnail= Thread(target=tThumbnail)
+
+    Processa_Watermark.start()
+    Processa_Watermark.join()
+
+    Processa_Resize.start()
+    Processa_Thumbnail.start()
+    Processa_Resize.join()
+    Processa_Thumbnail.join()
+
+def initialize():
+    print("Select Image Folder")
+    global path, dimensoes, tamanho
+    path = askdirectory(title='Select Folder')
+    dimensoes=int(input("Resize to which size? (px):\n"))
+    tamanho=int(input("Thumbnail to which size? (px):\n"))
+
+    if not os.path.exists(path+"/Watermark-dir"):
+        os.mkdir(path+"/Watermark-dir")
+    if not os.path.exists(path+"/Resize-dir"):
+        os.mkdir(path+"/Resize-dir")
+    if not os.path.exists(path+"/Thumbnail-dir"):
+        os.mkdir(path+"/Thumbnail-dir")
+
+
+def readtxt(path):
+    res=[]
+    f= open(path+"/image-list.txt", "r")
+    with f as texto:
+        for line in texto:
+            res+=[line.replace("\n", "")]
+    return res
+
+
 def resize(imagem, new_width):
     try:
         copy= Image.open(imagem)
@@ -18,13 +71,14 @@ def resize(imagem, new_width):
         print(e)
         return None
 
-def watermark(imagem, water):
+def watermark(imagem):
+    global watermarkLOC
     try:
         imagem=Image.open(imagem)
         try:
             # image watermark
             position=(0,0) 
-            crop_image = resize(water, math.ceil(imagem.size[0]/3))
+            crop_image = resize(watermarkLOC, math.ceil(imagem.size[0]/3))
             
             # add watermark
             copied_image = imagem.copy()
@@ -66,13 +120,14 @@ def thumbnail(ficheiro, tamanho):
 def tWatermark():
     global listacopy
     global path
-    global watermarkReady
     while len(listacopy)>0:
         imagem= listacopy.pop()
 
-        watermark(path+"/"+imagem, "watermark.png").save(path+ "/watermark/"+imagem, "PNG")
-        print("acabei 1")
-        watermarkReady+=[path+"/watermark/"+imagem]
+        if not os.path.exists(path+"/Watermark-dir/"+imagem):
+            print("watermark de "+imagem.split(".")[0]+": nao encontrado")
+            watermark(path+"/"+imagem).save(path+ "/Watermark-dir/"+imagem, "PNG")
+        else:
+            print("watermark de "+imagem.split(".")[0]+": encontrado")
     return
 
 def tResize():
@@ -80,8 +135,12 @@ def tResize():
     global lista
     global path
     global dimensoes
-    for nome in lista:
-        resize(path+"/watermark/"+nome, dimensoes).save(path +"/resized/"+ nome.split("/")[-1], "PNG")
+    for imagem in lista:
+        if not os.path.exists(path+"/Resize-dir/"+imagem):
+            print("resize de "+imagem.split(".")[0]+": nao encontrado")
+            resize(path+ "/Watermark-dir/" +imagem, dimensoes).save(path +"/Resize-dir/"+ imagem, "PNG")
+        else:
+            print("resize de "+imagem.split(".")[0]+": encontrado")
     return
         
 
@@ -91,44 +150,14 @@ def tThumbnail():
 
     global lista
     global path
-    for nome in lista:
-        thumbnail(path+"/watermark/"+nome, tamanho).save(path +"/thumbnail/"+ nome.split("/")[-1], "PNG")
+    for imagem in lista:
+        if not os.path.exists(path+"/Thumbnail-dir/"+imagem):
+            print("resize de "+imagem.split(".")[0]+": nao encontrado")
+            thumbnail(path+"/Resize-dir/" + imagem, tamanho).save(path + "/Thumbnail-dir/" +imagem, "PNG")
+        else:
+            print("resize de "+imagem.split(".")[0]+": encontrado")
     return
-    
-dimensoes= 500
-tamanho = 50
-watermarkReady=[]
-print("Select Image Folder")
-path = askdirectory(title='Select Folder')
-print(path)
-if not os.path.exists(path+"/watermark"):
-    os.mkdir(path+"/watermark")
-if not os.path.exists(path+"/resized"):
-    os.mkdir(path+"/resized")
-if not os.path.exists(path+"/thumbnail"):
-    os.mkdir(path+"/thumbnail")
-
-lista=[]
-
-f= open("nomes.txt", "r")
-
-with f as texto:
-    for line in texto:
-        lista+=[line.replace("\n", "")]
-
-listacopy=lista.copy()
-
-watermarkThread= Thread(target=tWatermark)
-resizeThread= Thread(target=tResize)
-thumbnailThread= Thread(target=tThumbnail)
-
-watermarkThread.start()
-watermarkThread.join()
-resizeThread.start()
-thumbnailThread.start()
 
 
-resizeThread.join()
-thumbnailThread.join()
 
-print("done")
+ap_paralelo_2()
