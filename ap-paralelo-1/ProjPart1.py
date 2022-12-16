@@ -11,7 +11,7 @@ dimensoes=0
 tamanho=0
 lista=[]
 listacopy=[]
-watermarkLOC="watermark.png"
+watermarkLOC="../watermark.png"
 
 
 

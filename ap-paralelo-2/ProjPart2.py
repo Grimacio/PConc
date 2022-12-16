@@ -9,7 +9,7 @@ dimensoes=0
 tamanho=0
 lista=[]
 listacopy=[]
-watermarkLOC="watermark.png"
+watermarkLOC="../watermark.png"
 
 
 
@@ -261,10 +261,10 @@ def tThumbnail():
     
     for imagem in lista:
         if not os.path.exists(path+"/Thumbnail-dir/"+imagem):
-            print("resize de "+imagem.split(".")[0]+": nao encontrado")
-            thumbnail(path+"/Resize-dir/" + imagem, tamanho).save(path + "/Thumbnail-dir/" +imagem, "PNG")
+            print("thumbnail de "+imagem.split(".")[0]+": nao encontrado")
+            thumbnail(path+ "/Watermark-dir/" + imagem, tamanho).save(path + "/Thumbnail-dir/" +imagem, "PNG")
         else:
-            print("resize de "+imagem.split(".")[0]+": encontrado")
+            print("thumbnail de "+imagem.split(".")[0]+": encontrado")
     return
 
 
