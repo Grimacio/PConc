@@ -170,9 +170,10 @@ def thumbnail(ficheiro, tamanho):
         imagem=Image.open(ficheiro)
 
         try:
+
             width, height = imagem.size
 
-            # Escolha da maior dimensao e conversao para a dimensao contraria
+            # Escolha da maior dimensao e conversão para a dimensão contrária
 
             if(width > height):
                 new_height = tamanho
@@ -229,7 +230,7 @@ def tWatermark():
 
 
 
-# Para cada imagem criada com watermark e criada uma copia com diferente 
+# Para cada imagem criada com watermark é criada uma cópia com diferente 
 # tamanho
 
 def tResize():

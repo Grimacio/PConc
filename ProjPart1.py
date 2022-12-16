@@ -32,27 +32,33 @@ def ap_paralelo_1():
 # a diretoria das imagens requeridas
 
 def initalize():
-    print("Select Image Folder")
+
     global path, numeroThreads, dimensoes, tamanho
 
+    print("Select Image Folder")
+    
     # Abre uma janela em que se navega até à diretoria em
     # que se econtram as imagens e o ficheiro .txt, 
     # guardando-se o path
+
     path = askdirectory(title='Select Folder')
 
-    
     while numeroThreads<=0:
         numeroThreads=int(input("Number of Threads?:\n"))
         if numeroThreads<=0:
             print("Invalid number of Threads")
 
+
     # A dimensao referente a imagem redimensionada
+
     dimensoes=int(input("Resize to which size? (px):\n"))
 
-    # A dimensao da thumbnail
+    # A dimensão da thumbnail
+
     tamanho=int(input("Thumbnail to which size? (px):\n"))
 
-    # Apenas criamos as novas pastas se estas nao existirem
+    # Apenas criamos as novas pastas se estas não existirem
+
     if not os.path.exists(path+"/Watermark-dir"):
         os.mkdir(path+"/Watermark-dir")
     if not os.path.exists(path+"/Resize-dir"):
@@ -81,9 +87,9 @@ def readtxt(path):
 
 
 
-# Sao criadas n Threads, cada uma executa a funcao threadFunc
+# São criadas n Threads, cada uma executa a função threadFunc
 # Para eventual identificacao, a propriedade "name" e alterada
-# de acordo com a ordem pela qual sao criadas
+# de acordo com a ordem pela qual são criadas
 
 def createThreads(n):
 
@@ -96,11 +102,13 @@ def createThreads(n):
     for i in range(n):
 
         # Cria-se e inicializa-se uma Thread
+
         newThread = Thread(target=threadFunc)
         newThread.name = "Processa_ficheiro("+ str(i)+")"
         newThread.start()
 
-        # Uma lista de Threads e criada para posterior finalizacao
+        # Uma lista de Threads é criada para posterior finalização
+
         listaThreads+=[newThread]
 
     for item in listaThreads:
@@ -130,7 +138,7 @@ def resize(imagem, new_width):
 
 
 
-# Com base no método "paste" a watermark e colocada no canto superior
+# Com base no método "paste" a watermark é colocada no canto superior
 # esquerdo da imagem original, sendo a sua largura ajustada para
 # corresponder a 1/3 da largura da imagem a que se pretende aplicar
 
@@ -148,11 +156,13 @@ def watermark(imagem):
             position=(0,0) 
             crop_image = resize(watermarkLOC, math.ceil(imagem.size[0]/3))
 
-            # Colocaçao da watermark
+            # Colocação da watermark
 
             copied_image = imagem.copy()
             copied_image.paste(crop_image, position, crop_image)
+
             return copied_image
+
         except Exception as e:
             print(e)
             return None
@@ -164,10 +174,10 @@ def watermark(imagem):
 
 
 
-# Com base no método "thumbnail" a imagem e redimensionada para o
-# tamanho indicado (convertendo para este tamanho a dimensao de maior 
+# Com base no método "thumbnail" a imagem é redimensionada para o
+# tamanho indicado (convertendo para este tamanho a dimensão de maior 
 # grau). De seguida a imagem é cortada centralmente, de modo a que
-# se torne um quadrado com dimensoes iguais ao tamanho indicado
+# se torne um quadrado com dimensões iguais ao tamanho indicado
 
 def thumbnail(ficheiro, tamanho):
 
@@ -182,7 +192,7 @@ def thumbnail(ficheiro, tamanho):
         try:
             width, height = imagem.size
 
-            # Escolha da maior dimensao e conversao para a dimensao contraria
+            # Escolha da maior dimensão e conversão para a dimensão contrária
 
             if(width > height):
                 new_height = tamanho
@@ -199,7 +209,9 @@ def thumbnail(ficheiro, tamanho):
 
             corte = (math.ceil(new_width/2-tamanho/2),math.ceil(new_height/2-tamanho/2),math.ceil(new_width/2+tamanho/2),math.ceil(new_height/2+tamanho/2))
             imagem = imagem.crop(corte)
+
             return imagem
+
         except Exception as e:
             print(e)
             return None
@@ -211,9 +223,9 @@ def thumbnail(ficheiro, tamanho):
 
 
 
-# Enquanto a listacopy contiver enderecos de imagens para processar,
-# o último dos seus elementos e usado para criar uma cópia da imagem
-# com watermark, que depois e redimensionada e por fim cria-se uma thumbnail
+# Enquanto a listacopy contiver endereços de imagens para processar,
+# o último dos seus elementos é usado para criar uma cópia da imagem
+# com watermark, que depois e redimensionada e por fim cria-se uma thumbnail.
 # Cada uma destas imagens é gravada no formato .png 
 
 def threadFunc():
