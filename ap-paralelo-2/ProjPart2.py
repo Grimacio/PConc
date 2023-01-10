@@ -3,6 +3,7 @@ from threading import Thread
 from PIL import Image
 from tkinter.filedialog import askdirectory
 import os
+from time import time
 
 path=""
 dimensoes=0
@@ -10,7 +11,8 @@ tamanho=0
 lista=[]
 listacopy=[]
 watermarkLOC="../watermark.png"
-
+start=0
+end=0
 
 
 
@@ -56,7 +58,7 @@ def createThreads():
 
 def initialize():
     print("Select Image Folder")
-    global path, dimensoes, tamanho
+    global path, dimensoes, tamanho, start
     
 
     # Abre uma janela em que se navega até à diretoria em
@@ -74,7 +76,7 @@ def initialize():
     tamanho=int(input("Thumbnail to which size? (px):\n"))
 
     # Apenas criamos as novas pastas se estas nao existirem
-
+    start= time()
     if not os.path.exists(path+"/Watermark-dir"):
         os.mkdir(path+"/Watermark-dir")
     if not os.path.exists(path+"/Resize-dir"):
@@ -270,3 +272,5 @@ def tThumbnail():
 
 
 ap_paralelo_2()
+end= time()
+print(end-start)

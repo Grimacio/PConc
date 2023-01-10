@@ -1,30 +1,53 @@
-from threading import Thread
 import math 
+from threading import Thread
 from PIL import Image
 from tkinter.filedialog import askdirectory
 import os
 from time import time
 
-start=0
-end=0
 path=""
-numeroThreads=0
 dimensoes=0
 tamanho=0
 lista=[]
 listacopy=[]
 watermarkLOC="../watermark.png"
+nThread=0
 
 
 
 # Inicializa o programa recolhendo inputs pelo terminal, 
 # recolhe os endereços das imagens e cria as threads de acordo
 
-def ap_paralelo_1():
-    global lista, path
-    initalize()
+def ap_paralelo_2():
+    
+    global path, lista
+    
+    initialize()
     lista=readtxt(path)
-    createThreads(numeroThreads)
+    createThreads()
+
+
+
+
+# Sao criadas 3 Threads, cada uma executa uma das 3 funcoes
+# (tWatermark, tResize e tThumbnail)
+
+def createThreads():
+    
+    global lista, listacopy
+    
+    listacopy=lista.copy()
+    Processa_Watermark= Thread(target=tWatermark)
+    Processa_Resize= Thread(target=tResize)
+    Processa_Thumbnail= Thread(target=tThumbnail)
+
+    Processa_Watermark.start()
+    Processa_Watermark.join()
+
+    Processa_Resize.start()
+    Processa_Thumbnail.start()
+    Processa_Resize.join()
+    Processa_Thumbnail.join()
 
 
 
@@ -32,35 +55,35 @@ def ap_paralelo_1():
 # Define os valores a utilizar no programa, bem como
 # a diretoria das imagens requeridas
 
-def initalize():
-
-    global path, numeroThreads, dimensoes, tamanho, start
-
-    print("Select Image Folder")
+def initialize():
     
+    global path, dimensoes, tamanho, nThread
+
+
     # Abre uma janela em que se navega até à diretoria em
     # que se econtram as imagens e o ficheiro .txt, 
-    # guardando-se o path
-
+    # guardando-se o path    
+    print("Select Image Folder")
     path = askdirectory(title='Select Folder')
+    
 
-    while numeroThreads<=0:
-        numeroThreads=int(input("Number of Threads?:\n"))
-        if numeroThreads<=0:
-            print("Invalid number of Threads")
+    # nThread refere-se ao numero de threads referentes a cada processo
 
-
+    while nThread<=0:
+        nThread=int(input("Número de threads para cada processo:\n"))
+    
+    
     # A dimensao referente a imagem redimensionada
+    
+    while dimensoes<=0:
+        dimensoes=int(input("Resize to which size? (px):\n"))
+    
+    # A dimensao da thumbnail
+    
+    while tamanho<=0:
+        tamanho=int(input("Thumbnail to which size? (px):\n"))
 
-    dimensoes=int(input("Resize to which size? (px):\n"))
-
-    # A dimensão da thumbnail
-
-    tamanho=int(input("Thumbnail to which size? (px):\n"))
-
-    # Apenas criamos as novas pastas se estas não existirem
-    start= time()
-
+    # Apenas criamos as novas pastas se estas nao existirem
     if not os.path.exists(path+"/Watermark-dir"):
         os.mkdir(path+"/Watermark-dir")
     if not os.path.exists(path+"/Resize-dir"):
@@ -75,46 +98,12 @@ def initalize():
 # as imagens se encontram, é retornada uma lista com os nomes das imagens
 
 def readtxt(path):
-
     res=[]
-
     f= open(path+"/image-list.txt", "r")
-
     with f as texto:
         for line in texto:
             res+=[line.replace("\n", "")]
-
     return res
-
-
-
-
-# São criadas n Threads, cada uma executa a função threadFunc
-# Para eventual identificacao, a propriedade "name" e alterada
-# de acordo com a ordem pela qual são criadas
-
-def createThreads(n):
-
-    global lista, listacopy
-
-    listacopy=lista.copy()
-
-    listaThreads=[]
-
-    for i in range(n):
-
-        # Cria-se e inicializa-se uma Thread
-
-        newThread = Thread(target=threadFunc, args=(i,))
-        newThread.name = "Processa_ficheiro("+ str(i)+")"
-        newThread.start()
-
-        # Uma lista de Threads é criada para posterior finalização
-
-        listaThreads+=[newThread]
-
-    for item in listaThreads:
-        item.join()
 
 
 
@@ -140,7 +129,7 @@ def resize(imagem, new_width):
 
 
 
-# Com base no método "paste" a watermark é colocada no canto superior
+# Com base no método "paste" a watermark e colocada no canto superior
 # esquerdo da imagem original, sendo a sua largura ajustada para
 # corresponder a 1/3 da largura da imagem a que se pretende aplicar
 
@@ -158,13 +147,11 @@ def watermark(imagem):
             position=(0,0) 
             crop_image = resize(watermarkLOC, math.ceil(imagem.size[0]/3))
 
-            # Colocação da watermark
+            # Colocaçao da watermark
 
             copied_image = imagem.copy()
             copied_image.paste(crop_image, position, crop_image)
-
             return copied_image
-
         except Exception as e:
             print(e)
             return None
@@ -176,10 +163,10 @@ def watermark(imagem):
 
 
 
-# Com base no método "thumbnail" a imagem é redimensionada para o
-# tamanho indicado (convertendo para este tamanho a dimensão de maior 
+# Com base no método "thumbnail" a imagem e redimensionada para o
+# tamanho indicado (convertendo para este tamanho a dimensao de maior 
 # grau). De seguida a imagem é cortada centralmente, de modo a que
-# se torne um quadrado com dimensões iguais ao tamanho indicado
+# se torne um quadrado com dimensoes iguais ao tamanho indicado
 
 def thumbnail(ficheiro, tamanho):
 
@@ -192,9 +179,10 @@ def thumbnail(ficheiro, tamanho):
         imagem=Image.open(ficheiro)
 
         try:
+
             width, height = imagem.size
 
-            # Escolha da maior dimensão e conversão para a dimensão contrária
+            # Escolha da maior dimensao e conversão para a dimensão contrária
 
             if(width > height):
                 new_height = tamanho
@@ -211,9 +199,7 @@ def thumbnail(ficheiro, tamanho):
 
             corte = (math.ceil(new_width/2-tamanho/2),math.ceil(new_height/2-tamanho/2),math.ceil(new_width/2+tamanho/2),math.ceil(new_height/2+tamanho/2))
             imagem = imagem.crop(corte)
-
             return imagem
-
         except Exception as e:
             print(e)
             return None
@@ -225,51 +211,72 @@ def thumbnail(ficheiro, tamanho):
 
 
 
-# Enquanto a listacopy contiver endereços de imagens para processar,
-# o último dos seus elementos é usado para criar uma cópia da imagem
-# com watermark, que depois e redimensionada e por fim cria-se uma thumbnail.
-# Cada uma destas imagens é gravada no formato .png 
+# Enquanto a listacopy contiver enderecos de imagens para processar,
+# o último dos seus elementos e usado para criar uma cópia da imagem
+# com watermark
 
-def threadFunc(i):
-
+def tWatermark():
+    
     global listacopy
     global path
-    global dimensoes
-    global tamanho
-
-
+    
     # Enquanto a listacopy contiver enderecos de imagens para processar,
     # a Thread continua ativa
-
+    
     while len(listacopy)>0:
         
-
         # O último dos seus elementos é usado 
-
+        
         imagem= listacopy.pop()
-        print("thread ",i)
+
         if not os.path.exists(path+"/Watermark-dir/"+imagem):
             print("watermark de "+imagem.split(".")[0]+": nao encontrado")
             watermark(path+"/"+imagem).save(path+ "/Watermark-dir/"+imagem, "PNG")
         else:
             print("watermark de "+imagem.split(".")[0]+": encontrado")
-        
+        #pipe para um dos thumbnails
+    return
+
+
+
+
+# Para cada imagem criada com watermark é criada uma cópia com diferente 
+# tamanho
+
+def tResize():
+    
+    global lista
+    global path
+    global dimensoes
+    
+    for imagem in lista:
         if not os.path.exists(path+"/Resize-dir/"+imagem):
             print("resize de "+imagem.split(".")[0]+": nao encontrado")
             resize(path+ "/Watermark-dir/" +imagem, dimensoes).save(path +"/Resize-dir/"+ imagem, "PNG")
         else:
             print("resize de "+imagem.split(".")[0]+": encontrado")
-        
-        if not os.path.exists(path+"/Thumbnail-dir/"+imagem):
-            print("resize de "+imagem.split(".")[0]+": nao encontrado")
-            thumbnail(path+"/Resize-dir/" + imagem, tamanho).save(path + "/Thumbnail-dir/" +imagem, "PNG")
-        else:
-            print("resize de "+imagem.split(".")[0]+": encontrado")
-
     return
 
-ap_paralelo_1()
-end=time()
-print("start " ,start)
-print("end ",end)
-print(end-start)
+
+
+        
+# Para cada imagem criada com watermark e criada uma copia para originar 
+# uma thumbnail
+
+def tThumbnail():
+    
+    global tamanho
+    global lista
+    global path
+    
+    for imagem in lista:
+        if not os.path.exists(path+"/Thumbnail-dir/"+imagem):
+            print("thumbnail de "+imagem.split(".")[0]+": nao encontrado")
+            thumbnail(path+ "/Watermark-dir/" + imagem, tamanho).save(path + "/Thumbnail-dir/" +imagem, "PNG")
+        else:
+            print("thumbnail de "+imagem.split(".")[0]+": encontrado")
+    return
+
+
+
+ap_paralelo_2()
