@@ -4,7 +4,6 @@ from PIL import Image
 from tkinter.filedialog import askdirectory
 import os
 from time import time
-from sys import getsizeof
 
 path=""
 dimensoes=0
@@ -26,8 +25,6 @@ def ap_paralelo_3():
     
     path, dimensoes, tamanho, nThread=initialize()
     lista=readtxt(path)
-    for i in range(nThread):
-        lista+=["-1"]
     createThreads(path, dimensoes, tamanho, nThread)
 
 
@@ -47,23 +44,33 @@ def createThreads(path, dimensoes, tamanho, nThread):
     readWatermark,writeWatermark= os.pipe()
     readResize,writeResize= os.pipe()
     readThumbnail,writeThumbnail= os.pipe()
-    max=0
-    for word in lista:
-        if max<len((word.encode('utf-8'))):
-            max=len((word).encode('utf-8'))
-    max+=len(("\n").encode('utf-8'))
-    for word in lista:
-        word+="\n"
-        for i in range(max-len(word.encode('utf-8'))):
-            word+=" "
-        os.write(writeWatermark, str.encode(word))
+    rw=os.fdopen(readWatermark)
+    ww=os.fdopen(writeWatermark, 'w')
+    rr=os.fdopen(readResize)
+    wr=os.fdopen(writeResize, 'w')
+    rt=os.fdopen(readThumbnail)
+    wt=os.fdopen(writeThumbnail, 'w')
 
+    """os.close(readWatermark)
+    os.close(readResize)
+    os.close(readThumbnail)
+    os.close(writeResize)
+    os.close(writeThumbnail) """
+    print("closes feitos")
+    print("aberto")
+    for word in lista:
+        ww.write(word+"\n")
+    ww.write("-1")
+    print("escrito")
+    ww.close()
+    print("fechado")
     threads=[]
     for i in range(nThread):
-        Processa_Watermark= Thread(target=tWatermark, args=(path,readWatermark, writeResize, max))
-        Processa_Resize= Thread(target=tResize, args=(path,dimensoes, readResize, writeThumbnail,max))
-        Processa_Thumbnail= Thread(target=tThumbnail, args=(path,tamanho, readThumbnail, max))
+        Processa_Watermark= Thread(target=tWatermark, args=(path,rw, wr))
+        Processa_Resize= Thread(target=tResize, args=(path,dimensoes, rr, wt))
+        Processa_Thumbnail= Thread(target=tThumbnail, args=(path,tamanho, rt))
         threads+=[Processa_Watermark]+[Processa_Resize]+[Processa_Thumbnail]
+    print("Threads a começar")
     for thread in threads:
         thread.start()
     for thread in threads:
@@ -237,17 +244,28 @@ def thumbnail(ficheiro, tamanho):
 # o último dos seus elementos e usado para criar uma cópia da imagem
 # com watermark
 
-def tWatermark(path,readWatermark, writeResize,max):
+def tWatermark(path,readWatermark, writeWatermark, readResize, writeResize):
+    print("*************************watermark a comecar *******************************")
     try:
         # Enquanto a listacopy contiver enderecos de imagens para processar,
+        p=os.fdopen(readWatermark)
         end=False
         while not end:
-            imagem=(os.read(readWatermark, max)).decode().replace("\n", "").replace(" ", "")
+            print("**whileW")
+            #os.close(writeWatermark)
+            #print("**closeW")
+            #print("**openW")
+            imagem=p.readline().replace("\n", "")
+            print(imagem)
+            print("tWatermark feito de ", imagem)
             
             if imagem =="-1":
+                print("end")
                 end=True
                 #os.close(readResize)
-                
+                os.fdopen(writeResize, 'w').write(imagem)
+                p.close()
+                f.close()
             else:
                 # O último dos seus elementos é usado 
                 if not os.path.exists(path+"/Watermark-dir/"+imagem):
@@ -257,12 +275,9 @@ def tWatermark(path,readWatermark, writeResize,max):
                     print("watermark de "+imagem.split(".")[0]+": encontrado")
                 #pipe para um dos thumbnails
                 #os.close(readResize)
-                
-                #os.write(writeResize, imagem.encode('utf-8'))
-            imagem+="\n"
-            for i in range(max-len(imagem.encode('utf-8'))):
-                imagem+=" "
-            os.write(writeResize, str.encode(imagem))
+                f=os.fdopen(writeResize, 'w')
+                f.write(imagem+"\n")
+        
         return
     except Exception as e:
         print(e)
@@ -274,23 +289,30 @@ def tWatermark(path,readWatermark, writeResize,max):
 # Para cada imagem criada com watermark é criada uma cópia com diferente 
 # tamanho
 
-def tResize(path,dimensoes, readResize,writeThumbnail,max):
+def tResize(path,dimensoes, readResize, writeResize, readThumbnail, writeThumbnail):
+    n=os.fdopen(readResize)
     end=False
     while not end:
-        imagem=(os.read(readResize, max)).decode().replace("\n", "").replace(" ", "")
+        print("**whileR")
+        #os.close(writeResize)
+        print("**closeR")
+        print("**openR")
+        imagem=n.readline().replace("\n", "")
+        print("tResize feito de ", imagem)
         if imagem=="-1":
             end=True
+            os.fdopen(writeThumbnail, 'w').write(imagem)
         elif len(imagem)>0:
             if not os.path.exists(path+"/Resize-dir/"+imagem):
                 print("resize de "+imagem.split(".")[0]+": nao encontrado")
                 resize(path+ "/Watermark-dir/" +imagem, dimensoes).save(path +"/Resize-dir/"+ imagem, "PNG")
             else:
                 print("resize de "+imagem.split(".")[0]+": encontrado")
-
-        imagem+="\n"
-        for i in range(max-len(imagem.encode('utf-8'))):
-            imagem+=" "
-        os.write(writeThumbnail, str.encode(imagem))
+            #os.close(readThumbnail)
+            f=os.fdopen(writeThumbnail, 'w')
+            f.write(imagem+"\n")
+    f.close()
+    n.close()
     return
 
 
@@ -299,11 +321,16 @@ def tResize(path,dimensoes, readResize,writeThumbnail,max):
 # Para cada imagem criada com watermark e criada uma copia para originar 
 # uma thumbnail
 
-def tThumbnail(path,tamanho, readThumbnail, max):
+def tThumbnail(path,tamanho, readThumbnail, writeThumbnail):
     end=False
+    h=os.fdopen(readThumbnail)
     while not end:
-        
-        imagem=(os.read(readThumbnail, max)).decode().replace("\n", "").replace(" ", "")
+        print("**whileT")
+        #os.close(writeThumbnail)
+        print("**closeT")
+        print("**openT")
+        imagem=h.readline().replace("\n", "")
+        print("tThumbnail feito de ", imagem)
         
         if imagem=="-1":
             end=True
@@ -313,6 +340,7 @@ def tThumbnail(path,tamanho, readThumbnail, max):
                 thumbnail(path+ "/Watermark-dir/" + imagem, tamanho).save(path + "/Thumbnail-dir/" +imagem, "PNG")
             else:
                 print("thumbnail de "+imagem.split(".")[0]+": encontrado")
+    h.close()
     return
 
 
